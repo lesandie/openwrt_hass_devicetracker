@@ -174,15 +174,13 @@ sync_state() {
     config_get hass_timeout_conn global timeout_conn
     config_get hass_source_name global source_name `uci get system.@system[0].hostname`
     config_get hass_whitelist_devices global whitelist
-
+# The same procedure as in the push_event() function
     for interface in `iw dev | grep Interface | cut -f 2 -s -d" "`; do
         maclist=`iw dev $interface station dump | grep Station | cut -f 2 -s -d" "`
         for mac in $maclist; do
             hostname="$(get_host_name $mac)"
-            if [ -n "$hass_whitelist_devices" ] && ! array_contains "$hostname" $hass_whitelist_devices; then
-                logger -t $0 -p warning "sync_state ignored, $hostname not in whitelist."
-            elif [ -z "$hostname" ]; then
-                logger -t $0 -p warning "sync_state ignored, hostname for $mac is empty."
+            if [ -n "$hass_whitelist_devices" ] && ! array_contains "$mac" $hass_whitelist_devices; then
+                logger -t $0 -p warning "sync_state ignored, $hostname with $mac not in whitelist."
             else
                 post $(build_payload "$mac" "$hostname" "$hass_timeout_conn" "$hass_source_name") &
             fi
