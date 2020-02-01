@@ -77,6 +77,7 @@ get_ip_dhcp() {
 get_host_name() {
     ret=$(get_host_name_dhcp $@)
     [ -z "$ret" ] && ret=$(get_host_name_dns $@)
+    [ -z "$ret" ] && ret=$(nslookup )
     echo $ret
 }
 
@@ -145,12 +146,10 @@ push_event() {
             return
             ;;
     esac
-
+# I just want only to chek for the mac address in the whitelist, and ignore the hostname and ip.
     [ -z "$hostname" ] && hostname="$(get_host_name $mac)"
-    if [ -n "$hass_whitelist_devices" ] && ! array_contains "$hostname" $hass_whitelist_devices; then
-        logger -t $0 -p warning "push_event ignored, $hostname not in whitelist."
-    elif [ -z "$hostname" ]; then
-        logger -t $0 -p warning "sync_state ignored, hostname for $mac is empty."
+    if [ -n "$hass_whitelist_devices" ] && ! array_contains "$mac" $hass_whitelist_devices; then
+        logger -t $0 -p warning "push_event ignored, $hostname with $mac not in whitelist."
     else
         post $(build_payload "$mac" "$hostname" "$timeout" "$hass_source_name")
     fi
